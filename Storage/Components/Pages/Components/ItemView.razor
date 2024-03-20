@@ -1,0 +1,303 @@
+﻿@inject ILogger<ItemView> Logger
+@rendermode RenderMode.InteractiveServer
+
+
+<div class="divItem">
+	@if (!IsEditMode)//если запущен режим обычного просмотра объекта StorageItem
+	{
+		<div class="divItem-preView div-border">
+			<div class="divItem-preView-text">
+				<p class="divItem-preView-text-pName">@StorageItem?.Name</p>
+				@if (@StorageItem?.Description != null && @StorageItem?.Description != "")
+				{
+					<p>(@StorageItem?.Description)</p>
+				}
+			</div>
+			@if (StorageItem?.ImageUrl != null)
+			{
+				<img class="divItem-preView-image @additionalMainImageClass"
+					 src="@StorageItem?.ImageUrl"
+					 @onclick="MainImageClick"
+					 title="@mainImageTitle" />
+			}
+		</div>
+		@if (ItemIsVisible)
+		{
+			<div class="div-border">
+				<div>
+					Дата добавления: @StorageItem?.InitDate.Date.ToLongDateString()
+				</div>
+				<div class="divItem-location">
+					<p>
+						Находится: @StorageItem?.Location.Name
+					</p>
+					@if (StorageItem?.Location.Description != null)
+					{
+						<p>
+							Уточнение: @StorageItem?.Location.Description
+						</p>
+					}
+				</div>
+			</div>
+			@if (StorageItem?.Location.Room != null)
+			{
+				<div class="div-border">
+					<p>
+						Лежит в комнате: @StorageItem?.Location.Room.Name
+					</p>
+					@if (StorageItem?.Location.Room.Description != null)
+					{
+						<p>
+							Описание комнаты: @StorageItem?.Location.Room.Description
+						</p>
+					}
+				</div>
+			}
+			@if (StorageItem?.Location.StoragePlace != null)
+			{
+				<div class="divItem-preView div-border">
+					<div class="divItem-preView-text">
+						<div>Место хранения: @StorageItem?.Location.StoragePlace.Name</div>
+						@if (StorageItem?.Location.StoragePlaceCell != null)
+						{
+							<div>
+								Уточнение: @StorageItem?.Location.StoragePlaceCell.Name
+							</div>
+						}
+					</div>
+					@if (StorageItem?.Location.StoragePlace.ImageUrl != null)
+					{
+						<img class="divItem-preView-image @additionalImageClass"
+							 src="@StorageItem?.Location.StoragePlace.ImageUrl"
+							 @onclick="StoragePlaceImageClick"
+							 title="@imageTitle" />
+					}
+				</div>
+			}
+		}
+	}
+	else
+	{// если запущен режим редактирования объекта StorageItem
+		<AddItemPage
+			IsEditMode="true"
+			StorageItem="StorageItem"
+					 OnClickSaveChangesButon="OnClickSaveChangesButon"></AddItemPage>
+	}
+	@* Блок кнопок управления объектом StorageItem *@
+	<div class="divItem-buttons">
+		@if (!IsEditMode)
+		{
+			@* <div class="div-button-blue div-m-r-10 div-m-t_b-5" @onclick="ExpandClick"> *@
+			<div class="div-button-blue divItem-buttons-margin div-m-t_b-5" @onclick="ExpandClick">
+			@* <div class="divItem-expand" @onclick="ExpandClick"> *@
+				<div class="divItem-expand-span">@expandText</div>
+				<img class="divItem-expand-img" src="@expandIconPath" />
+			</div>
+			@if (!DeleteWindowVisible)
+			{
+				@* <div class="div-button-blue div-m-r-10 div-m-t_b-5" @onclick="DeleteButtonClick"> *@
+				<div class="div-button-blue divItem-buttons-margin div-m-t_b-5" @onclick="DeleteButtonClick">
+					<div class="divItem-expand-span">Удалить</div>
+					<img class="divItem-expand-img" src="/Images/Icons/delete.svg" />
+				</div>
+			}
+			else
+			{
+				@* <div class="divItem-deleteWindow div-m-r-10 div-m-t_b-5"> *@
+				<div class="divItem-deleteWindow divItem-buttons-margin div-m-t_b-5">
+					<p>Подтвердите удаление "@StorageItem?.Name"?</p>
+					<div class="divItem-deleteWindow-buttons">
+						<button class="divItem-buttons-button" @onclick="DeleteConfirmed">Удалить</button>
+						<button class="divItem-buttons-button" @onclick="DeleteCanceled">Отмена</button>
+					</div>
+				</div>
+			}
+			@* <div class="div-button-blue div-m-r-10 div-m-t_b-5" @onclick="ButtonEditClick"> *@
+			<div class="div-button-blue divItem-buttons-margin div-m-t_b-5" @onclick="ButtonEditClick">
+				<div class="divItem-expand-span">Редактировать запись</div>
+				<img class="divItem-expand-img" src="/Images/Icons/edit.svg" />
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	/// <summary>
+	/// флаг означающий что компонент в режиме редактирования объекта StorageItem
+	/// </summary>
+	private bool IsEditMode { get; set; } = false;
+
+	private string expandIconPath = "/Images/Icons/expand.svg";
+	private string expandText = "Показать детали";
+
+	/// <summary>
+	/// флаг true-окно подтверждения удаления видно, false - не видно
+	/// </summary>
+	private bool DeleteWindowVisible { get; set; } = false;
+
+	private bool _itemIsVisible = false;
+	/// <summary>
+	/// Свойство хранящее состояние кнопки Показать детали/свернуть у отображения объекта StorageItem
+	/// </summary>
+	public bool ItemIsVisible
+	{
+		get { return _itemIsVisible;}
+		set 
+		{ 
+			_itemIsVisible = value;
+			if (value == true)
+			{
+				expandIconPath = "/Images/Icons/expand-less.svg";
+				expandText = "Cвернуть";
+			}
+			else
+			{
+				expandIconPath = "/Images/Icons/expand.svg";
+				expandText = "Показать детали";
+			}
+		}
+	}
+
+	/// <summary>
+	/// в этом своестве хранится название класса которое применяется для 
+	/// дополнительной стилизации изображения(увеличение размера) при нажатии на изображение 
+	/// </summary>
+	private string additionalMainImageClass = "";
+	private string mainImageTitle = "Нажмите для увеличения изображения";
+	private bool _mainImageIsClicked = false;
+	public bool MainImageIsClicked
+	{
+		get { return _mainImageIsClicked; }
+		set 
+		{ 
+			_mainImageIsClicked = value;
+			if (_mainImageIsClicked) 
+			{ 
+				additionalMainImageClass = "divItem-preView-image-big";
+				mainImageTitle = "Нажмите для уменьшения изображения";
+			}
+			else 
+			{ 
+				additionalMainImageClass = "";
+				mainImageTitle = "Нажмите для увеличения изображения";
+			}
+		}
+	}
+
+	/// <summary>
+	/// в этом своестве хранится название класса которое применяется для
+	/// дополнительной стилизации изображения(увеличение размера) при нажатии на изображение
+	/// </summary>
+	private string additionalImageClass = "";
+	private string imageTitle = "Нажмите для увеличения изображения";
+	private bool _imageIsClicked = false;
+	public bool ImageIsClicked
+	{
+		get { return _imageIsClicked; }
+		set
+		{
+			_imageIsClicked = value;
+			if (_imageIsClicked) 
+			{ 
+				additionalImageClass = "divItem-preView-image-big"; 
+				mainImageTitle = "Нажмите для уменьшения изображения";
+			}
+			else 
+			{ 
+				additionalImageClass = ""; 
+				mainImageTitle = "Нажмите для увеличения изображения";
+			}
+		}
+	}
+
+	/// <summary>
+	/// передается в компонент для отображения его данных
+	/// </summary>
+	[Parameter]
+	[EditorRequired]
+	public StorageItem? StorageItem { get; set; }
+
+	/// <summary>
+	/// коллбек, который требуется вызвать если пользователь 
+	/// хочет удалить объект StorageItem отображаемый этим компонентом
+	/// </summary>
+	[Parameter]
+	public EventCallback<int> OnClickDeleteButonConfirm { get; set; }
+
+	/// <summary>
+	/// коллбек, который требуется вызвать если пользователь
+	/// хочет сохранить изменеия в объекте StorageItem отображаемом этим компонентом
+	/// </summary>
+	[Parameter]
+	public EventCallback<StorageItem> OnClicSaveItemChangesButon { get; set; }
+	/// <summary>
+	/// обработчик нажатия на кнопку развернуть детали/свернуть
+	/// </summary>
+	private void ExpandClick()
+	{
+		ItemIsVisible = !ItemIsVisible;
+	}
+	/// <summary>
+	/// обработчик нажатия на главное изображение объекта StorageItem
+	/// </summary>
+	private void MainImageClick()
+	{
+		MainImageIsClicked = !MainImageIsClicked;
+	}
+	/// <summary>
+	/// обработчик нажатия на изображение места хранения объекта StorageItem
+	/// </summary>
+	private void StoragePlaceImageClick()
+	{
+		ImageIsClicked = !ImageIsClicked;
+	}
+	/// <summary>
+	/// обработчик нажатия на кнопку удалить объект StorageItem
+	/// </summary>
+	private void DeleteButtonClick()
+	{
+		Logger.LogInformation("Нажата кнопка 'удалить' вещь");
+		DeleteWindowVisible = true;
+	}
+	/// <summary>
+	/// обработчик нажатия на кнопку подтвердить удалиение объекта StorageItem
+	/// </summary>
+	/// <returns></returns>
+	private async Task DeleteConfirmed()
+	{
+		Logger.LogInformation($"Нажата кнопка подтверждения удаления предмета " + 
+		$"StorageItem.StorageItemId={StorageItem?.StorageItemId}");
+		DeleteWindowVisible = false;
+		await OnClickDeleteButonConfirm.InvokeAsync(StorageItem.StorageItemId);
+
+	}
+	/// <summary>
+	/// обработчик нажатия на кнопку отменить удалиение объекта StorageItem
+	/// </summary>
+	private void DeleteCanceled()
+	{
+		Logger.LogInformation($"Нажата кнопка отмены удаления предмета " +
+		$"StorageItem.StorageItemId={StorageItem?.StorageItemId}");
+		DeleteWindowVisible = false;
+	}
+	/// <summary>
+	/// обработчик нажатия на кнопку редактировать объект StorageItem
+	/// </summary>
+	private void ButtonEditClick ()
+	{
+		Logger.LogInformation("Нажата кнопка \"Редактировать запись\"");
+		IsEditMode = true;
+	}
+	/// <summary>
+	/// обработчик нажатия на кнопку сохранить изменения после редактирования объекта StorageItem
+	/// </summary>
+	/// <param name="storageItem"></param>
+	/// <returns></returns>
+	private async Task OnClickSaveChangesButon(StorageItem storageItem)
+	{
+		Logger.LogInformation("Запущен collback: private async Task OnClickSaveChangesButon(StorageItem storageItem)");
+		IsEditMode = false;
+		await OnClicSaveItemChangesButon.InvokeAsync(storageItem);
+
+	}
+}

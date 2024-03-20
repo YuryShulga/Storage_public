@@ -1,0 +1,107 @@
+﻿@page "/find_item"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.EntityFrameworkCore
+@inject Logics Logics
+@inject ILogger<FindItemPage> Logger
+@inject StorageDbCrudLogic StorageDbCrudLogic
+@attribute [Authorize]
+@rendermode RenderMode.InteractiveServer
+
+<PageTitle>Хранилище - Поиск предмета в хранилище</PageTitle>
+<h3>Поиск хранимой вещи</h3>
+<EditForm Model="@Model" OnValidSubmit="OnValidSubmit" OnInvalidSubmit="OnInvalidSubmit">
+	<DataAnnotationsValidator />
+	<InputText @bind-Value="Model.Text"  placeholder="текст для поиска" ></InputText>
+	<ValidationSummary/>
+	<button type="submit">Искать вещь</button>
+	<br />
+	<div>
+		<InputCheckbox 
+			id="findCheckbox" 
+			@bind-Value="Model.FindInDescriptionChecked"
+					   title="Поиск в имени и описании предмета">
+		</InputCheckbox>
+		<label for="findCheckbox" title="Поиск в имени и описании предмета">Расширенный поиск</label>
+	</div>
+	
+</EditForm>
+@if (FindFlag)
+{
+	<h3>Найдено @((FindedItems != null) ? FindedItems.Count() : 0) предметов со словом "@SearchText"</h3>
+}
+@if (FindedItems != null)
+{
+	@foreach (var item in FindedItems)
+	{
+		<ItemView 
+			StorageItem="@item" 
+			OnClickDeleteButonConfirm="OnClickDeleteButonConfirm"
+			OnClicSaveItemChangesButon="OnClicSaveItemChangesButon" />
+	}
+}
+
+@code {
+	private string SearchText { get; set; } = "";
+	/// <summary>
+	/// модель данных для формы поиска
+	/// </summary>
+	private FindModel Model { get; set; } = new();
+	/// <summary>
+	/// список StorageItems в которых найден искомый текст для текущего пользователя 
+	/// </summary>
+	private IQueryable<StorageItem>? FindedItems { get; set; }
+	/// <summary>
+	/// флаг сигнализирующий что если == false значит поиск с момента загрузки компонента не был ни разу запущен 
+	/// </summary>
+	private bool FindFlag { get; set; } = false;
+	/// <summary>
+	/// обработчик OnValidSubmit для формы поиска
+	/// </summary>
+	/// <returns></returns>
+	private async Task OnValidSubmit()
+	{
+		FindedItems = null;
+		SearchText = Model.Text;
+		if (!Model.FindInDescriptionChecked)
+		{
+			FindedItems = await Logics.FindStorageItemsWithItemName(Model.Text);
+		}
+		else
+		{
+			FindedItems = await Logics.FindStorageItemsWithAllItemText(Model.Text);
+		}
+		FindFlag = true;
+	}
+	/// <summary>
+	/// обработчик OnInValidSubmit для формы поиска
+	/// </summary>
+	private void OnInvalidSubmit()
+	{
+		FindedItems = null;
+		FindFlag = false;
+	}
+	/// <summary>
+	///  обработчик колбека: удаления storageItem в базе данных
+	/// </summary>
+	/// <param name="storageItemId"></param>
+	/// <returns></returns>
+	private async Task OnClickDeleteButonConfirm(int storageItemId)
+	{
+		Logger.LogInformation($"Вызов OnClickDeleteButonConfirm(int storageItemId)");
+		Logics.DeleteStorageItem(storageItemId, FindedItems);
+
+
+	}
+	/// <summary>
+	/// обработчик колбека: сохранение изменений в storageItem в базе данных
+	/// </summary>
+	/// <param name="storageItem"></param>
+	/// <returns></returns>
+	private async Task OnClicSaveItemChangesButon(StorageItem editedStorageItem)
+	{
+		Logger.LogInformation("Вызов: OnClicSaveItemChangesButon(StorageItem storageItem)");
+		await StorageDbCrudLogic.StorageItemsSaveChanges(editedStorageItem, FindedItems);
+	}
+
+	
+}

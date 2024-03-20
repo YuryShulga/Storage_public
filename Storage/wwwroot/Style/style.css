@@ -1,0 +1,123 @@
+﻿@font-face {
+    font-family: 'Tmvinogradregular';
+    src: url('../Fonts/tmvinograd/Tmvinogradoblique.ttf') format('truetype'), url('../Fonts/tmvinograd/Tmvinogradoblique.woff') format('woff'), url('../Fonts/tmvinograd/Tmvinogradoblique.woff2') format('woff2');
+    /* Дополнительные форматы шрифта, если они доступны */
+    /* src: url('путь_к_вашему_файлу/Tmvinogradregular.eot'); */
+    /* src: url('путь_к_вашему_файлу/Tmvinogradregular.woff2') format('woff2'),
+             url('путь_к_вашему_файлу/Tmvinogradregular.woff') format('woff'); */
+}
+@font-face{
+    font-family: 'Barkentina';
+    src: url('../Fonts/barkentina/barkentina1.ttf') format('truetype'),
+    url('../Fonts/barkentina/barkentina1.woff') format('woff'),
+    url('../Fonts/barkentina/barkentina1.woff2') format('woff2');
+}
+/* для app.razor */
+.apprazor-background-color{
+    background-color: #ebf1ff;
+    
+    
+}
+body{
+    font-family: 'Barkentina';
+}
+/*Для Page login*/
+.container-centered {
+    display: block;
+    text-align: center;
+}
+.container-left-right-margin{
+    margin-left: 4%;
+    margin-right: 4%;
+}
+/* .container-left-right-padding{ } */
+@media (width <= 800px)
+{
+    .container-left-right-padding{
+        padding-left: 10px;
+        padding-right: 10px;
+    }   
+}
+/* @media (930px <= width <= 1100px)
+{
+    .container-left-right-padding{
+        padding-left: 6%;
+        padding-right: 6%;
+    }   
+}
+@media (1100px <= width <= 1500px)
+{
+    .container-left-right-padding{
+        padding-left: 12%;
+        padding-right: 12%;
+    }   
+}
+@media (1500px <= width <= 2100px)
+{
+    .container-left-right-padding{
+        padding-left: 20%;
+        padding-right: 20%;
+    }   
+}
+@media (2100px <= width )
+{
+    .container-left-right-padding{
+        padding-left: 30%;
+        padding-right: 30%;
+    }   
+} */
+.div-font-family {
+    font-family: 'Barkentina';
+}
+.text-color-red {
+    color: red;
+}
+.text-color-green {
+    color: green;
+}
+.text-color-white {
+    color: white;
+}
+.warning-color {
+    color: red;
+}
+.div-margins {
+    margin-top: 20px;
+}
+.div-m-r-10{
+    margin-right: 10px;
+}
+.div-m-t_b-5{
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.div-fontsize {
+    font-size: 20px;
+}
+.background-blue-gradient{
+    background-image: linear-gradient(to bottom, #0802c4, #4f49fea0);
+}
+.button-blue{
+    color: white;
+    font-size: 20px;
+    font-family: 'Barkentina';
+    background-image: linear-gradient(to bottom, #002cde, #002cde76);
+    padding: 10px;
+    border-radius: 5px;
+}
+    .button-blue:hover{
+        transform: scale(1.1);
+    }
+.div-button-blue{
+    display: flex;
+    color: white;
+    font-family: 'Barkentina';
+    background-image: linear-gradient(to bottom, #002cde, #002cde76);
+    width: fit-content;
+    padding: 10px;
+    border-radius: 5px;
+    align-items: center;
+}
+.div-button-blue:hover{
+    transform: scale(1.1);
+}

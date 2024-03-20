@@ -1,0 +1,14 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Routing  @*для NavLink*@
+@attribute [Authorize] 
+<div>
+    <NavigationBar IsAuthorized="true" />
+    <div class="div-body container-left-right-margin">
+        @Body
+    </div>
+</div>
+
+@code{
+    
+
+}

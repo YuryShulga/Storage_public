@@ -1,0 +1,437 @@
+﻿@page "/add_item"
+@* @using Storage.Data.StorageDb *@
+@using Storage.Data
+@attribute [Authorize]
+
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment WebHostEnvironment
+@inject ILogger<AddItemPage> Logger
+@inject Logics Logics
+@* подключение контекста данных базы *@
+@* @inject StorageDbContext StorageDbContext *@
+@inject ApplicationDbContext ApplicationDbContext
+@* подключение класса CRUD методов работы с базой  *@
+@inject StorageDbCrudLogic StorageDbCrudLogic
+@* для получения индетнификатора текущего пользователя *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode RenderMode.InteractiveServer
+@layout Storage.Components.Layout.AuthorizedLayout
+
+<PageTitle>Хранилище - Добавление нового предмета в хранилище</PageTitle>
+
+@if (IsEditMode)
+{
+    <h3>Изменение записи "@StorageItem?.Name"</h3>
+}
+else
+{
+    <h3>Добавление нового предмета в хранилище</h3>    
+}
+@if (formIsEnabled)
+{
+    <EditForm Model="@storageItemeModel" OnValidSubmit="AddItem" FormName="addItem">
+        <DataAnnotationsValidator />
+        <div class="div-inputBlock">
+            <div>
+                Название предмета:
+                <InputText @bind-Value="storageItemeModel.StorageItemName" placeholder="Название предмета" />
+                <ValidationMessage For="@(() => storageItemeModel.StorageItemName)" />
+            </div>
+            <div>
+                Описание предмета:
+                <InputText @bind-Value="storageItemeModel.StorageItemDescription" placeholder="Описание предмета" />
+            </div>
+            <div>
+                Фото предмета:
+                <InputFile OnChange="ItemImageOnFileChange" accept=".jpg, .jpeg, .png" />
+                <div>@itemImageLoaderHelper.ImageStatus</div>
+                @if (storageItemeModel.StorageItemImageUrl != null)
+                {
+                    <img src="@itemImageLoaderHelper.ImageDataUrl" width="@imageWidth" alt="Загруженное изображение" />                   
+                }
+            </div>
+        </div>
+        <div class="div-inputBlock">
+            <div>
+                Название помещения в котором будет храниться предмет (дом, гараж, у друга):
+                <InputText @bind-Value="storageItemeModel.LocationName"
+                           @oninput="OnInputLocationName"
+                           @onblur=OnBlurLocationName
+                           placeholder="Название помещения" />
+                <ValidationMessage For="@(() => storageItemeModel.LocationName)" />
+            </div>
+            <div>
+                Описание помещения:
+                <InputText @bind-Value="storageItemeModel.LocationDescription" placeholder="Описание помещения" />
+            </div>
+        </div>
+        @if (storageItemeModel.LocationName != null)
+        {
+            <div class="div-inputBlock">
+                <div>
+                    Название комнаты в месте хранения (например: спальня):
+                    <InputText @bind-Value="storageItemeModel.LocationRoomName"
+                               @oninput="OnInputLocationRoomName"
+                               @onblur="OnBlurLocationRoomName"
+                               placeholder="Название комнаты" />
+                </div>
+                <div>
+                    Описание комнаты:
+                    <InputText @bind-Value="storageItemeModel.LocationRoomDescription" placeholder="Описание комнаты" />
+                </div>
+            </div>
+        }
+        @if (storageItemeModel.LocationRoomName != null && storageItemeModel.LocationName != null)
+        {
+            <div class="div-inputBlock">
+                <div>
+                    Название места хранения в комнате (например: шкаф, полка):
+                    <InputText @bind-Value="storageItemeModel.LocationRoomPlaceName"
+                               @oninput="OnInputLocationRoomPlaceName"
+                               @onblur="OnBlurLocationRoomPlaceName"
+                               placeholder="Название места хранения" />
+                </div>
+                <div>
+                    Фотограффия места хранения в комнате (например: шкаф, полка):
+                    <InputFile OnChange="PlaceImageOnFileChange"  accept=".jpg, .jpeg, .png" />
+                    <div>@itemImagePlaceLoaderHelper.ImageStatus</div>
+                    @if (storageItemeModel.LocationRoomPlaceImageUrl != null)
+                    {
+                        <img src="@itemImagePlaceLoaderHelper.ImageDataUrl" width="@imageWidth" alt="Загруженное изображение" />
+                    }
+                </div>
+            </div>
+        }
+        @if (storageItemeModel.LocationRoomPlaceName != null && storageItemeModel.LocationRoomName != null && storageItemeModel.LocationName != null)
+        {
+            <div class="div-inputBlock">
+                <div>
+                    Название ячейки в месте хранения в комнате (например: верхняя полка в шкафу):
+                    <InputText @bind-Value="storageItemeModel.LocationRoomPlaceCellName" placeholder="Название ячейки" />
+                </div>
+            </div>
+        }
+        <ValidationSummary/>
+        @if (IsEditMode)
+        {
+            <button class="editForm-button" type="submit" disabled="@buttonAddItemIsDisabled">
+                Сохранить изменения
+            </button>
+            <button class="editForm-button" @onclick="EditModeCanceling" disabled="@buttonAddItemIsDisabled">
+                Отмена
+            </button>
+        }
+        else
+        {
+            <button class="editForm-button" type="submit" disabled="@buttonAddItemIsDisabled">
+                Добавить запись о "
+                @if (storageItemeModel.StorageItemName == "" || storageItemeModel.StorageItemName == null)
+                {
+                    <span>предмете</span>
+                }
+                else
+                {
+                    <span>@storageItemeModel.StorageItemName</span>
+                }
+                " в хранилище
+            </button>
+        }
+    </EditForm>
+}
+else
+{
+    <div>
+        Предмет успешно добавлен.
+    </div>
+    <button class="editForm-button" @onclick="AddNewItem">Добавить еще один предмет</button>
+}
+
+@code {
+    /// <summary>
+    /// флаг обозначающий что компонент используется в режиме редактирования
+    /// </summary>
+    [Parameter]
+    public bool IsEditMode { get; set; } = false;
+
+    /// <summary>
+    /// в editMode сюда передается StorageItem который будем редактировать
+    /// </summary>
+    [Parameter]
+    public StorageItem? StorageItem { get; set; }
+
+    /// <summary>
+    /// в editMode тут хранится Url картинки которая была, чтоб можно было удалить ее при изменении
+    /// </summary>
+    private string tempStorageItemImageUrl;
+    /// <summary>
+    /// в editMode тут хранится Url картинки которая была, чтоб можно было удалить ее при изменении
+    /// </summary>
+    private string tempStorageItemPlaceImageUrl;
+    /// <summary>
+    /// В editMode сдесь хранится коллбек , котороый вызывается когда нужно сохранить редактируемый StorageItem
+    /// </summary>
+    [Parameter]
+    public EventCallback<StorageItem> OnClickSaveChangesButon { get; set; }
+    /// <summary>
+    /// ширина предросмотра изображения предмета и места хранения
+    /// </summary>
+    private int imageWidth = 300;
+    /// <summary>
+    /// флаг отображается форма или нет 
+    /// </summary>
+    private bool formIsEnabled = true;
+    /// <summary>
+    /// флаг активна ли кнопка добавления предмета или сохранения редактированного предмета
+    /// </summary>
+    private bool buttonAddItemIsDisabled = false;
+    /// <summary>
+    /// модель данных подключенная к форме 
+    /// </summary>
+    private StorageItemModel storageItemeModel = new();
+
+    private ImageLoaderHelper itemImageLoaderHelper = new();
+    private ImageLoaderHelper itemImagePlaceLoaderHelper = new();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        FillStorageItemModelWithData();
+    }
+    /// <summary>
+    /// Обработчик submit формы срабатывает если нажымаешь добавть новый StorageItem либо сохранить измененный
+    /// </summary>
+    /// <returns></returns>
+    private async Task AddItem()
+    {
+        Logger.LogInformation("Вызов метода: private async Task AddItem()");
+        buttonAddItemIsDisabled = true;
+        if (IsEditMode)//режим редактирования существующего предмета
+        {
+            //загружаю изображения на сервер и  сохраняю путь в модель
+            //если изображение не менялось пропускаю обработку
+            if (tempStorageItemImageUrl != storageItemeModel.StorageItemImageUrl)
+            {
+                storageItemeModel.StorageItemImageUrl = await Logics.UploadImageToWwwroot(
+                itemImageLoaderHelper, storageItemeModel.StorageItemImageUrl);
+            }
+            if (tempStorageItemPlaceImageUrl != storageItemeModel.LocationRoomPlaceImageUrl)
+            {
+                storageItemeModel.LocationRoomPlaceImageUrl = await Logics.UploadImageToWwwroot(
+                itemImagePlaceLoaderHelper, storageItemeModel.LocationRoomPlaceImageUrl);                
+            }
+            //создаю Объект storageItem из модели формы и передаю его для обновления базы данных
+            StorageItem tempItem = Logics.ConvertStorageItemModelToStorageItem(storageItemeModel);
+            tempItem.StorageItemId = StorageItem.StorageItemId;
+            await OnClickSaveChangesButon.InvokeAsync(tempItem);
+            //если изображения были изменены, удаляю ненужные изображения
+            Logger.LogCritical($"tempStorageItemImageUrl={tempStorageItemImageUrl}");
+            Logger.LogCritical($"storageItemeModel.StorageItemImageUrl={storageItemeModel.StorageItemImageUrl}");
+            await Logics.DeleteUnnecessaryImageFiles(
+                tempStorageItemImageUrl,
+                tempStorageItemPlaceImageUrl,
+                tempItem);
+        }
+        else//обычный режим добавления нового предмета в базу
+        {
+            await AddItemHelper();
+        }
+        buttonAddItemIsDisabled = false;
+    }
+    /// <summary>
+    /// заполняет форму данными из полученной компонентом StorageItem
+    /// </summary>
+    private async Task FillStorageItemModelWithData()
+    {
+        if (StorageItem != null)
+        {
+            storageItemeModel.User = new();
+            storageItemeModel.User.Name = StorageItem.User.Name;
+            storageItemeModel.User.UserId = StorageItem.User.UserId;
+            storageItemeModel.StorageItemName = StorageItem.Name;
+            storageItemeModel.StorageItemDescription = StorageItem.Description;
+            storageItemeModel.StorageItemImageUrl = StorageItem.ImageUrl;
+            storageItemeModel.LocationName = StorageItem.Location.Name;
+            storageItemeModel.LocationDescription = StorageItem.Location.Description;
+            storageItemeModel.LocationRoomName = StorageItem.Location.Room?.Name;
+            storageItemeModel.LocationRoomDescription = StorageItem.Location.Room?.Description;
+            storageItemeModel.LocationRoomPlaceName = StorageItem.Location.StoragePlace?.Name;
+            storageItemeModel.LocationRoomPlaceImageUrl = StorageItem.Location.StoragePlace?.ImageUrl;
+            storageItemeModel.LocationRoomPlaceCellName = StorageItem.Location.StoragePlaceCell?.Name;
+            //отображаю изображение в <img>
+            itemImageLoaderHelper.ImageDataUrl = storageItemeModel.StorageItemImageUrl;
+            //сохраняю путь к исходному изображению
+            tempStorageItemImageUrl = storageItemeModel.StorageItemImageUrl;
+            //отображаю изображение в <img>
+            itemImagePlaceLoaderHelper.ImageDataUrl = storageItemeModel.LocationRoomPlaceImageUrl;
+            //сохраняю путь к исходному изображению
+            tempStorageItemPlaceImageUrl = storageItemeModel.LocationRoomPlaceImageUrl;
+        }
+    }
+    /// <summary>
+    /// реализует логику добавления нового StorageItem в базу данных
+    /// </summary>
+    /// <returns></returns>
+    private async Task AddItemHelper()
+    {
+        //получаю имя пользователя из Authentication токена
+        System.Security.Claims.ClaimsPrincipal user;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        user = authState.User;
+        string? name = user.Identity?.Name;
+        //TODO нужна проверка на то что в базе не найден пользователь и вернулся Null
+        //нахожу запись юзера в базе и добавляю ее в storageItemeModel
+        //storageItemeModel.User = StorageDbContext.Users.FirstOrDefault(u => u.UserId == name);
+        storageItemeModel.User = ApplicationDbContext.Users.FirstOrDefault(u => u.UserId == name);
+        //загружаю изображения на сервер
+        //и  сохраняю путь в модель
+        storageItemeModel.StorageItemImageUrl =  await Logics.UploadImageToWwwroot(
+            itemImageLoaderHelper, storageItemeModel.StorageItemImageUrl);
+        storageItemeModel.LocationRoomPlaceImageUrl = await Logics.UploadImageToWwwroot(
+            itemImagePlaceLoaderHelper, storageItemeModel.LocationRoomPlaceImageUrl);
+        //добавляю StorageItem в базу данных
+        await StorageDbCrudLogic.AddStorageItem(storageItemeModel);
+        //TODO сделать чтобы formIsEnabled обрабатывался атрибутом формы
+        //прячу форму ввода
+        formIsEnabled = false;
+        storageItemeModel = new();
+    }
+    /// <summary>
+    /// событие вызывается если пользователь выбрал файл с изображением предмета
+    /// </summary>
+    /// <param name="e"></param>
+    /// <returns></returns>
+    private async Task ItemImageOnFileChange(InputFileChangeEventArgs e)
+    {
+        await LoadUserImage(e, itemImageLoaderHelper);
+        //название выбранного файла
+        storageItemeModel.StorageItemImageUrl = e.File.Name;
+    }
+
+    /// <summary>
+    /// событие вызывается если пользователь выбрал файл с изображением места хранения предмета
+    /// </summary>
+    /// <param name="e"></param>
+    /// <returns></returns>
+    private async Task PlaceImageOnFileChange(InputFileChangeEventArgs e)
+    {
+        await LoadUserImage(e, itemImagePlaceLoaderHelper);
+        //название выбранного файла
+        storageItemeModel.LocationRoomPlaceImageUrl = e.File.Name;
+    }
+    /// <summary>
+    ///Вызывается при введении в форме места хранения предмета  storageItemeModel.LocationName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnInputLocationName(ChangeEventArgs e)
+    {
+        storageItemeModel.LocationName = e.Value.ToString();
+    }
+    /// <summary>
+    /// вызывается при потере фокуса InputText свойства storageItemeModel.LocationName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnBlurLocationName(FocusEventArgs e)
+    {
+        if (storageItemeModel.LocationName == "")
+        {
+            storageItemeModel.LocationName = null;
+            storageItemeModel.LocationRoomName = null;
+            storageItemeModel.LocationRoomPlaceName = null;
+            storageItemeModel.LocationRoomPlaceCellName = null;
+            return;
+        }
+    }
+    /// <summary>
+    ///Вызывается при введении в форме storageItemeModel.LocationRoomName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnInputLocationRoomName(ChangeEventArgs e)
+    {
+        storageItemeModel.LocationRoomName = e.Value.ToString();
+    }
+    /// <summary>
+    /// вызывается при потере фокуса InputText свойства storageItemeModel.LocationRoomName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnBlurLocationRoomName(FocusEventArgs e)
+    {
+        if (storageItemeModel.LocationRoomName == "")
+        {
+            storageItemeModel.LocationRoomName = null;
+            storageItemeModel.LocationRoomPlaceName = null;
+            storageItemeModel.LocationRoomPlaceCellName = null;
+            return;
+        }
+    }
+    /// <summary>
+    /// Вызывается при введении в форме storageItemeModel.LocationRoomPlaceName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnInputLocationRoomPlaceName(ChangeEventArgs e)
+    {
+        storageItemeModel.LocationRoomPlaceName = e.Value.ToString();
+    }
+    /// <summary>
+    /// вызывается при потере фокуса InputText свойства storageItemeModel.LocationRoomPlaceName
+    /// </summary>
+    /// <param name="e"></param>
+    private void OnBlurLocationRoomPlaceName(FocusEventArgs e)
+    {
+        if (storageItemeModel.LocationRoomPlaceName == "")
+        {
+            storageItemeModel.LocationRoomPlaceName = null;
+            storageItemeModel.LocationRoomPlaceCellName = null;
+            return;
+        }
+    }
+    /// <summary>
+    /// Очищает поля ввода формы и ставит флаг разрешающий показ формы для ввода
+    /// </summary>
+    private void AddNewItem()
+    {
+        formIsEnabled = true;
+    }
+    /// <summary>
+    /// загружает изображение в "ImageLoaderHelper imageLoaderHelper" из
+    /// "InputFileChangeEventArgs e" полученного в результате использования <inputfile>
+    /// изображение уменьшается или увеличивается до "size" размера по большей стороне
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="imageLoaderHelper"></param>
+    /// <param name="size"></param>
+    /// <returns></returns>
+    private async Task LoadUserImage(
+        InputFileChangeEventArgs e,
+        ImageLoaderHelper imageLoaderHelper,
+        int size = 500)
+    {
+        //блокирую кнопку "добавить предмет"
+        buttonAddItemIsDisabled = true;
+        Logger.LogInformation("Выбран новый файл с изображением предмета. Запущена загрузка файла в ImageStorage....ImageBytes");
+        imageLoaderHelper.ImageStatus = "Изображение загружается...";
+        IBrowserFile file = e.File;
+        byte[] imageBytes;
+        //загружаю изображение в массив байтов
+        imageBytes = await Logics.ConvertIBrowserFileToByteArray(e.File);
+        if (imageBytes == null)
+        {
+            Logger.LogWarning("Не получилось конвертировать выбранное пользователем изображение в byte[]. изображение не загружено");
+            return;
+        }
+        //уменьшаю изображение(либо увеличиваю)
+        imageBytes = Logics.ScaleImage(imageBytes, size, size);
+        string base64Image = Convert.ToBase64String(imageBytes);
+        //загружаю изображение в <img>
+        imageLoaderHelper.ImageDataUrl = $"data:{file.ContentType};base64,{base64Image}";
+        imageLoaderHelper.ImageStatus = "";
+        //разблокирую кнопку "добавить предмет"
+        buttonAddItemIsDisabled = false;
+    }
+    /// <summary>
+    /// обработчик кнопки: отмена редактирования StotageItem
+    /// </summary>
+    private void EditModeCanceling()
+    {
+        Navigation.NavigateTo(Navigation.Uri, true);
+    }
+}

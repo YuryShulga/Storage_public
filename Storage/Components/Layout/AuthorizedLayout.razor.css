@@ -1,0 +1,23 @@
+﻿body {
+}
+.div-body {
+    margin-top: 80px;
+}
+@media (max-width: 1111px) {
+    .div-body {
+        margin-top: 120px;
+    }
+}
+a {
+    color: #00897B;
+}
+
+    a.active {
+        color: #004D40;
+        font-weight: 700;
+    }
+
+.activeNavLink {
+    color: #B71C1C;
+    font-weight: 700;
+}

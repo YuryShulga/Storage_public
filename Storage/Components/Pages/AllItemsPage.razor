@@ -1,0 +1,61 @@
+﻿@page "/all_items"
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize]
+@inject Logics Logics
+@inject ILogger<AllItemsPage> Logger
+@inject StorageDbCrudLogic StorageDbCrudLogic
+@rendermode RenderMode.InteractiveServer
+
+<PageTitle>Хранилище - отображение всех вещей в хранилище</PageTitle>
+<h3 class="container-left-right-margin">Предметов в хранилище: @Items?.Count() шт.</h3>
+@foreach(var item in Items)
+{
+	<ItemView 
+		StorageItem="@item" 
+		OnClickDeleteButonConfirm="OnClickDeleteButonConfirm"
+		OnClicSaveItemChangesButon="OnClicSaveItemChangesButon" />
+}
+
+@code {
+	/// <summary>
+	/// список объектов storageItem которые есть у текущего пользователя
+	/// </summary>
+	private IQueryable<StorageItem>? Items { get; set; }
+
+	protected override async void OnInitialized()
+	{
+		base.OnInitialized();
+		//загружаю все storageItems в Items
+		await GetAllUserStorageItems();
+	}
+
+	/// <summary>
+	/// Создает список всех объектов StorageItem для текущего пользователя и сохраняет его в Items
+	/// </summary>
+	/// <returns></returns>
+	private async Task GetAllUserStorageItems()
+	{
+		Items =await Logics.GetAllUserStorageItems();
+	}
+	/// <summary>
+	/// обработчик колбека: удаление объекта storageItem из базы данных
+	/// </summary>
+	/// <param name="storageItemId"></param>
+	/// <returns></returns>
+	private async Task OnClickDeleteButonConfirm(int storageItemId)
+	{
+		Logger.LogInformation($"The button delete is is pressed in item {storageItemId}");
+		await Logics.DeleteStorageItem(storageItemId, Items);
+	}
+	/// <summary>
+	/// обработчик колбека: сохранение изменений в storageItem в базе данных
+	/// </summary>
+	/// <param name="storageItem"></param>
+	/// <returns></returns>
+	private async Task OnClicSaveItemChangesButon(StorageItem editedStorageItem)
+	{
+		Logger.LogInformation("Запущен collback: private async Task OnClicSaveItemChangesButon(StorageItem storageItem)");
+		await StorageDbCrudLogic.StorageItemsSaveChanges(editedStorageItem, Items);
+		
+	}
+}

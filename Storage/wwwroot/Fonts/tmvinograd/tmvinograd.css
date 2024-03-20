@@ -1,0 +1,12 @@
+@font-face {
+    font-family: 'TM Vinograd';
+    src: local('TM Vinograd Oblique'), local('TMVinograd-Oblique'), url('Tmvinogradoblique.woff2') format('woff2'), url('Tmvinogradoblique.woff') format('woff'), url('Tmvinogradoblique.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'TM Vinograd';
+    src: local('TM Vinograd Regular'), local('TMVinograd-Regular'), url('Tmvinogradregular.woff2') format('woff2'), url('Tmvinogradregular.woff') format('woff'), url('Tmvinogradregular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}

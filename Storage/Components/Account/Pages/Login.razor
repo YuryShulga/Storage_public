@@ -1,0 +1,155 @@
+﻿@page "/Account/Login"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using Storage.Data
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>НеТеряЙ - Вход/Авторизация</PageTitle>
+
+<div class="container-centered">
+    <h1>Авторизация</h1>
+    <div class="row">
+        <div class="col-md-4 ">
+            <section>
+                <StatusMessage Message="@errorMessage"/>
+                <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                    <DataAnnotationsValidator />
+                    @* <h2>Use a local account to log in.</h2> *@
+                    <h2>Используйте учетную запись для входа.</h2>
+                    <hr/>
+                    @if (RegisterEmail != null)
+                    {
+                        <div class="text-color-green div-font-family div-fontsize">
+                             Пользователь с email: @RegisterEmail успешно зарегистрировался.
+                        </div>
+                    }
+                    @* <ValidationSummary class="text-danger" role="alert" /> *@
+                    <div class="div-margins  div-font-family div-fontsize">
+                        <InputText id="input-text-email" @bind-Value="Input.Email" class="form-control div-margins  div-font-family div-fontsize" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                        <label for="input-text-email" class="form-label div-font-family div-fontsize">Email</label>
+                        <ValidationMessage For="() => Input.Email" class="text-danger text-color-red" />
+                    </div>
+                    <div class="form-floating mb-3 div-margins div-fontsize div-font-family">
+                        <InputText id="input-text-password" type="password" @bind-Value="Input.Password" class="form-control div-margins  div-font-family div-fontsize" autocomplete="current-password" aria-required="true" placeholder="password" />
+                        <label for="input-text-password" class="form-label div-font-family div-fontsize">Пароль</label>
+                        <ValidationMessage For="() => Input.Password" class="text-danger text-color-red" />
+                    </div>
+                    @* <div class="checkbox mb-3">
+                        <label class="form-label">
+                            <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
+                            Remember me
+                        </label>
+                    </div> *@
+                    <div>
+                        @* <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button> *@
+                        <button type="submit"
+                                class="button-blue div-margins">
+                            Войти
+                        </button>
+                    </div>
+                    <div>
+                        @* <p>
+                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                        </p> *@
+                        <p>
+                            @* <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a> *@
+                            <a class="div-margins div-fontsize" href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Создать нового пользователя</a>
+                        </p>
+                        @* <p>
+                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                        </p> *@
+                    </div>
+                </EditForm>
+            </section>
+        </div>
+        @*  <div class="col-md-6 col-md-offset-2">
+        <section>
+        <h3>Use another service to log in.</h3>
+        <hr />
+        <ExternalLoginPicker />
+        </section>
+        </div> *@
+    </div>
+
+</div>
+
+
+@code {
+    private string? errorMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+
+    /// <summary>
+    /// email который передает форма регистрации
+    /// </summary>
+    [SupplyParameterFromQuery]
+    private string? RegisterEmail { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+        if (RegisterEmail != null)
+        {
+            Input.Email = RegisterEmail;
+        }
+    }
+
+    public async Task LoginUser()
+    {
+        // This doesn't count login failures towards account lockout
+        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        if (result.Succeeded)
+        {
+            Logger.LogInformation("User logged in.");
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
+        else if (result.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo(
+                "Account/LoginWith2fa",
+                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+        }
+        else if (result.IsLockedOut)
+        {
+            Logger.LogWarning("User account locked out.");
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            errorMessage = "Ошибка: Неверная попытка входа. Проверьте введенный Email и пароль.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Поле 'Email' обязательно для заполнения.")]
+        [EmailAddress(ErrorMessage = "Некорректный формат адреса электронной почты.")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Поле 'Пароль' обязательно для заполнения.")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
+        public bool RememberMe { get; set; }
+    }
+}

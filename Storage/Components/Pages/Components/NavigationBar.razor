@@ -1,0 +1,53 @@
+﻿@rendermode RenderMode.InteractiveServer
+@inject ILogger<NavigationBar> Logger
+@inject NavigationManager NavigationManager
+
+@if (!IsAuthorized)
+{
+    <div class="navigationBar">
+        @* <div class="div-sendwich-button">
+            сендвич
+        </div> *@
+        <div class="div-menu-label div-sendwich-button">
+            <label class="div-menu-label" for="side-checkbox">
+                &#x2630;
+            </label>
+        </div>
+        <div class="div-menu-label div-menu-label-user">Гость</div>
+        @* <div class="div-menu-button" @onclick="Click">Главная страница</div> *@
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="/">Главная страница</a>
+        <NavLink href="/" Match="NavLinkMatch.All" ActiveClass="activeNavLink"></NavLink>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="account/login">Войти</a>
+        <SandwichMenu IsAuthorized="false"/>
+    </div>
+}
+else
+{
+    <div class="navigationBar">
+        <div class="div-menu-label div-sendwich-button">
+            <label class="div-menu-label" for="side-checkbox">
+                &#x2630;
+            </label>
+        </div>
+        <div class="div-menu-label div-menu-label-user"><UsersLabel /></div>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="/">Главная страница</a>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="all_items">Все вещи</a>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="add_item">Добавить вещь</a>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="find_item">Найти вещь</a>
+        <a class="div-menu-label div-menu-button div-menu-disappear" href="logout">Выйти</a>
+        <SandwichMenu IsAuthorized="true" />
+    </div>
+}
+
+
+
+@code {
+    //bool isLogined = false;
+    [Parameter]
+    public bool IsAuthorized { get; set; }
+
+    void Click()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

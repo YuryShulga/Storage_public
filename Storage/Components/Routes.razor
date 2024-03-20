@@ -1,0 +1,27 @@
+﻿@using Storage.Components.Account.Shared
+@inject AuthenticationStateProvider AuthenticationStateProvider
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="@GetLayout()">
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
+
+
+@code {
+    private System.Type GetLayout()
+    {
+        @if (AuthenticationStateProvider.GetAuthenticationStateAsync().Result.User.Identity.IsAuthenticated)
+        {
+            return typeof(Layout.AuthorizedLayout);
+        }
+        else
+        {
+            return typeof(Layout.MainLayout);
+        }
+    }
+}

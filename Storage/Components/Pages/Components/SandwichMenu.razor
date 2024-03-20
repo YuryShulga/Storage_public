@@ -1,0 +1,79 @@
+﻿@inject NavigationManager NavigationManager
+
+<input type="checkbox" id="side-checkbox" />
+<div class="side-panel">
+    <label class="side-button-2" for="side-checkbox">+</label>
+    @* <div class="side-title">
+        <div class="div-menu-label div-menu-label-user">Гость</div>
+    </div> *@
+    <br/>
+    @if (!IsAuthorized)
+    {
+        <div class="sandvich-meny-margins">
+            @* <a class="div-menu-label div-menu-button " href="/">Главная страница</a> *@
+            <label for="side-checkbox" class="div-menu-label div-menu-button " @onclick="MainPageClick">Главная страница</label>
+        </div>
+        <div class="sandvich-meny-margins">
+            @* <a class="div-menu-label div-menu-button " href="account/login">Войти</a> *@
+            @* <a class="div-menu-label div-menu-button " href="account/login">Войти</a> *@
+            <label for="side-checkbox" class="div-menu-label div-menu-button " @onclick="LoginPageClick">Войти</label>
+        </div>
+        <NavLink href="/" Match="NavLinkMatch.All" ActiveClass="activeNavLink"></NavLink>
+        
+    }
+    else
+    {
+        <div class="sandvich-meny-margins">
+            <label for="side-checkbox" class="div-menu-label div-menu-button " @onclick="MainPageClick">Главная страница</label>
+        </div>
+        <div class="sandvich-meny-margins">
+            <label for="side-checkbox" class="div-menu-label div-menu-button" @onclick="AllStorageItemsPageClick">Все вещи</label>
+        </div>
+        <div class="sandvich-meny-margins">
+            <label for="side-checkbox" class="div-menu-label div-menu-button" @onclick="AddStorageItemPageClick">Добавить вещь</label>
+        </div>
+        <div class="sandvich-meny-margins">
+            <label for="side-checkbox" class="div-menu-label div-menu-button" @onclick="FindStorageItemPageClick">Найти вещь</label>
+        </div>
+        <div class="sandvich-meny-margins">
+            <label for="side-checkbox" class="div-menu-label div-menu-button" @onclick="LogOutPageClick">Выйти</label>
+        </div>   
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool IsAuthorized { get; set; }
+
+
+    void MainPageClick()
+    {
+        NavigationManager.NavigateTo("/");
+        
+    }
+    void LoginPageClick()
+    {
+        NavigationManager.NavigateTo("account/login");
+        
+    }
+    void AllStorageItemsPageClick()
+    {
+        NavigationManager.NavigateTo("all_items");
+        
+    }
+    void AddStorageItemPageClick()
+    {
+        NavigationManager.NavigateTo("add_item");
+        
+    }
+    void FindStorageItemPageClick()
+    {
+        NavigationManager.NavigateTo("find_item");
+        
+    }
+    void LogOutPageClick()
+    {
+        NavigationManager.NavigateTo("logout");
+        
+    }
+}

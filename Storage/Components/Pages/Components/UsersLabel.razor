@@ -1,0 +1,25 @@
+﻿@* @using Storage.Data.StorageDb *@
+@using Storage.Data
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@* @inject StorageDbContext StorageDbContext *@
+@inject ApplicationDbContext ApplicationDbContext
+<span>@userName</span>
+@code {
+	private string userName = "Гость";
+	private System.Security.Claims.ClaimsPrincipal user;
+	protected override async Task OnInitializedAsync()
+	{
+		base.OnInitialized();
+		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+		user = authState.User;
+		string? name = user.Identity?.Name;
+		if (name != null) 
+		{
+			//получаю имя - никнейм пользователя 
+			//string storageUserName = StorageDbContext.Users.First(u => (u.UserId == name)).Name;
+			string storageUserName = ApplicationDbContext.Users.First(u => (u.UserId == name)).Name;
+			//string storageUserName = "tempname нужно доделать UserLabel.Razor";
+			userName = storageUserName; 
+		}
+	}
+}

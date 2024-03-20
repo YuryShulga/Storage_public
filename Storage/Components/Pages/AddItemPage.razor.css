@@ -1,0 +1,16 @@
+﻿body {   
+}
+.div-inputBlock {
+    border: 1px solid lightgray;
+    border-radius: 10px;
+    padding: 5px;
+    margin-bottom: 5px;
+    background-color: rgb(244, 245, 255);
+}
+.editForm-button {
+    padding: 5px;
+    margin-right: 10px;
+}
+.editForm-button:hover {
+    background-color: lightgreen;
+}

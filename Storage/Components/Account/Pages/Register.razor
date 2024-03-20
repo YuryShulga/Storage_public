@@ -1,0 +1,187 @@
+﻿@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Storage.Data
+@using Storage.Data.StorageDb
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+@* @inject StorageDbContext StorageDbContext *@
+@inject ApplicationDbContext ApplicationDbContext
+
+@* <PageTitle>Register</PageTitle> *@
+<PageTitle>НеТеряЙ - Регистрация нового пользователя</PageTitle>
+
+<div class="container-centered">
+    <h1>Регистрация нового пользователя</h1>
+    <div class="col-md-4">
+        <StatusMessage Message="@Message" />
+        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+            <DataAnnotationsValidator />
+            @* <h2>Create a new account.</h2> *@
+            <h2>Создать новый аккаунт</h2>
+            <hr />
+            @* <ValidationSummary class="text-danger" role="alert" /> *@
+            <div class="div-margins  div-font-family div-fontsize">
+                <InputText @bind-Value="Input.Email" class="form-control div-margins  div-font-family div-fontsize" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="email" class="form-label div-font-family div-fontsize">Email</label>
+                <ValidationMessage For="() => Input.Email" class="text-danger text-color-red" />
+            </div>
+            <div class="div-margins  div-font-family div-fontsize">
+                <InputText @bind-Value="Input.NickName" class="form-control div-margins  div-font-family div-fontsize" autocomplete="nickname" aria-required="true" placeholder="Nickname" />
+                @* <label for="nickname">Nickname</label> *@
+                <label for="nickname" class="form-label div-font-family div-fontsize">Никнейм</label>
+                <ValidationMessage For="() => Input.NickName" class="text-danger text-color-red" />
+            </div>
+            <div class="div-margins  div-font-family div-fontsize">
+                <InputText type="password" @bind-Value="Input.Password" class="form-control div-margins  div-font-family div-fontsize" autocomplete="new-password" aria-required="true" placeholder="password" />
+                @* <label for="password">Password</label> *@
+                <label for="password" class="form-label div-font-family div-fontsize">Пароль</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger text-color-red" />
+            </div>
+            <div class="div-margins  div-font-family div-fontsize">
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control div-margins  div-font-family div-fontsize" autocomplete="new-password" aria-required="true" placeholder="password" />
+                @* <label for="confirm-password">Confirm Password</label> *@
+                <label for="confirm-password" class="form-label div-font-family div-fontsize">Подтверждение пароля</label>
+                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger text-color-red" />
+            </div>
+            @* <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button> *@
+            <button type="submit"
+                    class="button-blue div-margins">
+                Зарегистрировать
+            </button>
+        </EditForm>
+    </div>
+    @* <div class="col-md-6 col-md-offset-2">
+        <section>
+            <h3>Use another service to register.</h3>
+            <hr />
+            <ExternalLoginPicker />
+        </section>
+    </div> *@
+</div>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = CreateUser();
+
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+        var emailStore = GetEmailStore();
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            return;
+        }
+
+        //добавление юзера в бд StorageDb
+        Data.StorageDb.User userStorageDb = new();
+        userStorageDb.Name =  Input.NickName;
+        userStorageDb.UserId = Input.Email.ToUpper();
+        // StorageDbContext.Users.Add(userStorageDb);
+        // StorageDbContext.SaveChanges();
+        ApplicationDbContext.Users.Add(userStorageDb);
+        ApplicationDbContext.SaveChanges();
+        //-------------------
+
+        Logger.LogInformation("User created a new account with password.");
+        // var userId = await UserManager.GetUserIdAsync(user);
+        // var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        // code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        // var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+        //     NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+        //     new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+
+        // await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        // if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        // {
+        //     RedirectManager.RedirectTo(
+        //         "Account/RegisterConfirmation",
+        //         new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        // }
+
+        // await SignInManager.SignInAsync(user, isPersistent: false);
+        //RedirectManager.RedirectTo(ReturnUrl);
+
+        //подтверждение логина
+        //TODO  - .ConfirmEmailAsync вызывалась в ConfirmEmail.razor. доделать проверки
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        var userTemp = await UserManager.FindByEmailAsync(Input.Email);
+        await UserManager.ConfirmEmailAsync(userTemp, code);
+        //переадресация на страницу логин
+        RedirectManager.RedirectTo(
+            "Account/Login",
+            new() { ["RegisterEmail"] = Input.Email, ["returnUrl"] = ReturnUrl });
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return Activator.CreateInstance<ApplicationUser>();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
+                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("The default UI requires a user store with email support.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+
+        //добавил для получения никнейма пользователя
+        [Required(ErrorMessage = "Необходимо ввести никнейм")]
+        public string NickName { get; set; } = "";
+
+        [Required]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
+        public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
+
+
+    }
+}
